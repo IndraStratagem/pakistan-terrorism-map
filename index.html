@@ -124,7 +124,6 @@
       download: true,
       header: true,
       complete: function(results) {
-        console.log(results.data); // check if rows are loading
 	var attacks = results.data;
         populateFilters(attacks);
         updateMarkers(attacks);
