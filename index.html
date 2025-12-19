@@ -124,7 +124,8 @@
       download: true,
       header: true,
       complete: function(results) {
-	console.log(results.data); // Debug: check if rows are loading
+	console.log("CSV rows loaded:", results.data.length);
+	console.log(results.data[0]); // Debug: check if rows are loading
 	var attacks = results.data;
         populateFilters(attacks);
         updateMarkers(attacks);
