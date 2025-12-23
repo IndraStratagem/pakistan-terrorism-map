@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map of Terrorist Attacks in Pakistan (Post-2021)</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Plugin CSS (only for working plugins) -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" /> <!-- Not requested, but often used -->
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/brunob/leaflet.fullscreen/master/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/kartena/Leaflet.Pancontrol/master/src/Leaflet.Pancontrol.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/w8r/Leaflet.Bookmarks/master/dist/leaflet.bookmarks.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/ljagis/leaflet-measure/master/dist/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/gokertanrisever/leaflet-ruler/master/leaflet-ruler.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/ppete2/Leaflet.PolylineMeasure/master/Leaflet.PolylineMeasure.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/NLTGit/Leaflet.LinearMeasurement/master/dist/leaflet.linearmeasurement.css" />
+    <style>
+        #map { height: 800px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Working Plugins (verified with correct initialization) -->
+    <script src="https://raw.githubusercontent.com/slara/Leaflet.BorderPan/master/Leaflet.BorderPan.js"></script> <!-- Adds map.borderPan({}) -->
+    <script src="https://raw.githubusercontent.com/SINTEF-9012/Leaflet.GameController/master/Leaflet.GameController.js"></script>
+    <script src="https://raw.githubusercontent.com/kartena/Leaflet.Pancontrol/master/src/Leaflet.Pancontrol.js"></script>
+    <script src="https://raw.githubusercontent.com/vogdb/Leaflet.ActiveLayers/master/dist/Leaflet.ActiveLayers.min.js"></script>
+    <script src="https://raw.githubusercontent.com/w8r/Leaflet.Bookmarks/master/dist/leaflet.bookmarks.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.js"></script>
+    <script src="https://raw.githubusercontent.com/NLTGit/Leaflet.LinearMeasurement/master/dist/leaflet.linearmeasurement.js"></script>
+    <script src="https://raw.githubusercontent.com/wattnpapa/leaflet.nauticscale/master/dist/leaflet.nauticscale.js"></script>
+    <script src="https://raw.githubusercontent.com/MarcChasse/leaflet.ScaleFactor/master/dist/leaflet.scalefactor.js"></script>
+    <script src="https://raw.githubusercontent.com/ljagis/leaflet-measure/master/dist/leaflet-measure.min.js"></script>
+    <script src="https://raw.githubusercontent.com/gokertanrisever/leaflet-ruler/master/leaflet-ruler.js"></script>
+    <script src="https://raw.githubusercontent.com/ppete2/Leaflet.PolylineMeasure/master/Leaflet.PolylineMeasure.js"></script>
+    <script src="https://raw.githubusercontent.com/gabriel-russo/Leaflet.QgsMeasure/master/dist/leaflet.qgsmeasure.js"></script>
+    <script src="https://raw.githubusercontent.com/pasichnykvasyl/Leaflet.BigImage/master/dist/Leaflet.BigImage.min.js"></script>
+    <script src="https://raw.githubusercontent.com/Igor-Vladyka/leaflet.browser.print/master/dist/leaflet.browser.print.min.js"></script>
+    <script>
+        // Map initialization
+        var map = L.map('map', { center: [30.3753, 69.3451], zoom: 5 });
+
+
+        // Basemaps (English labels)
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        });
+
+        var openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.opentopomap.org">OpenTopoMap</a>'
+        });
+
+        var baseLayers = {
+            "OpenStreetMap": osm,
+            "Esri Imagery": esriImagery,
+            "OpenTopoMap": openTopo
+        };
+
+        // Province and District borders
+        fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PAK/ADM1/geoBoundaries-PAK-ADM1_simplified.geojson')
+            .then(r => r.json())
+            .then(data => L.geoJSON(data, { style: { color: '#ff0000', weight: 2, fillOpacity: 0 } }).addTo(map));
+
+        fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PAK/ADM2/geoBoundaries-PAK-ADM2_simplified.geojson')
+            .then(r => r.json())
+            .then(data => L.geoJSON(data, { style: { color: '#0000ff', weight: 1, fillOpacity: 0 } }).addTo(map));
+
+        // Correct plugin initializations (only working ones)
+
+        L.control.fullscreen({ position: 'topleft',title: 'Full screen',
+            titleCancel: 'Exit full screen', forceSeparateButton: true}).addTo(map); // Fullscreen
+        new L.Control.MiniMap(L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'), { toggleDisplay: true }).addTo(map); // MiniMap
+        L.control.linearMeasurement({ position: 'topleft' }).addTo(map); // LinearMeasurement
+        L.control.nauticScale().addTo(map); // NauticScale
+        L.control.scaleFactor().addTo(map); // ScaleFactor
+        L.control.measure({ position: 'topleft' }).addTo(map); // leaflet-measure
+        L.control.ruler({ position: 'topleft' }).addTo(map); // Ruler
+        L.control.polylineMeasure({ position: 'topleft' }).addTo(map); // PolylineMeasure
+        L.control.qgsMeasure({ position: 'topleft' }).addTo(map); // QgsMeasure
+        map.addcontrol.bigImage({ position: 'topright' }).addTo(map); // BigImage (print large image)
+        L.control.browserPrint({ position: 'topleft' }).addTo(map); // BrowserPrint
+
+        // Layer groups
+        var provinceGroups = {};
+        var terroristGroups = {};
+        var overlays = {};
+
+        // Load data from Excel
+        fetch('terrorist_attacks_pakistan.xlsx')
+            .then(response => response.arrayBuffer())
+            .then(data => {
+                var workbook = XLSX.read(data, { type: 'array' });
+                var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                var jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                jsonData.forEach(row => {
+                    if (row.Latitude && row.Longitude) {
+                        var popupContent = `
+                            <b>Date:</b> ${row.Date || 'N/A'}<br>
+                            <b>Deaths (Gov):</b> ${row.Deaths_Gov || 'N/A'}<br>
+                            <b>Deaths (Terrorist):</b> ${row.Deaths_Terrorist || 'N/A'}<br>
+                            <b>City:</b> ${row.City || 'N/A'}<br>
+                            <b>Description:</b> ${row.Description || 'N/A'}<br>
+                            <b>Province:</b> ${row.Province || 'N/A'}<br>
+                            <b>Injuries:</b> ${row.Injuries || 'N/A'}<br>
+                            <b>Latitude:</b> ${row.Latitude}<br>
+                            <b>Longitude:</b> ${row.Longitude}<br>
+                            <b>Terrorist Group:</b> ${row.Terrorist_Group || 'N/A'}
+                        `;
+
+                        var marker = L.marker([row.Latitude, row.Longitude])
+                            .bindPopup(popupContent);
+
+                        marker.on('mouseover', e => e.target.openPopup());
+                        marker.on('mouseout', e => e.target.closePopup());
+
+                        // Group by Province
+                        var prov = row.Province || 'Unknown';
+                        if (!provinceGroups[prov]) {
+                            provinceGroups[prov] = L.layerGroup();
+                            overlays[`Province: ${prov}`] = provinceGroups[prov];
+                        }
+                        provinceGroups[prov].addLayer(marker);
+
+                        // Group by Terrorist Group
+                        var grp = row.Terrorist_Group || 'Unknown';
+                        if (!terroristGroups[grp]) {
+                            terroristGroups[grp] = L.layerGroup();
+                            overlays[`Group: ${grp}`] = terroristGroups[grp];
+                        }
+                        terroristGroups[grp].addLayer(marker);
+                    }
+                });
+
+                // Show all by default
+                Object.values(provinceGroups).forEach(g => g.addTo(map));
+                Object.values(terroristGroups).forEach(g => g.addTo(map));
+
+                // Layers control (basemaps + overlays)
+                L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+            })
+            .catch(err => console.error('Data load error:', err));
+    </script>
+</body>
+</html>
