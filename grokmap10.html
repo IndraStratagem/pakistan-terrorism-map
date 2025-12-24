@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map of Terrorist Attacks in Pakistan (Post-2021)</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Plugin CSS (only for working plugins) -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" /> <!-- Not requested, but often used -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.css" />
+    <link rel="stylesheet" href="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@latest/dist/leaflet.draw.css" />
+    <link rel="stylesheet" type="text/css" href="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.css">
+    <link rel="stylesheet" href="https://ljagis.github.io/leaflet-measure/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.css" rel="stylesheet" />
+    <style>
+        #map { height: 800px; width: 100%; }
+        /* Province dropdown styling */
+        .province-control {
+            position: relative;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-family: Arial, sans-serif;
+        }
+        
+        .province-control select {
+            width: 200px;
+            padding: 5px;
+            font-size: 14px;
+        }
+        
+        .province-control label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        /* Collapsible layer control */
+        .leaflet-control-layers {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Working Plugins (verified with correct initialization) -->
+    <script src="https://raw.githubusercontent.com/SINTEF-9012/Leaflet.GameController/master/Leaflet.GameController.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
+    <script src="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.js"></script>
+    <script src="https://raw.githubusercontent.com/wattnpapa/leaflet.nauticscale/master/dist/leaflet.nauticscale.js"></script>
+    <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
+    <script src="https://raw.githubusercontent.com/Igor-Vladyka/leaflet.browser.print/master/dist/leaflet.browser.print.min.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@latest/dist/leaflet.draw.js"></script>
+    <script src="https://npmcdn.com/jquery@3.0.0/dist/jquery.min.js"></script>
+    <script src="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.js"></script>
+    <script src="https://ljagis.github.io/leaflet-measure/leaflet-measure.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.umd.min.js"></script>
+    <script src="https://cdn.maptiler.com/leaflet-maptilersdk/v4.1.0/leaflet-maptilersdk.umd.min.js"></script>
+    <script>
+
+            // Map initialization (must be after basemaps for default addTo)
+        var map = L.map('map', { center: [30.3753, 69.3451], zoom: 5 });
+
+        // MapTiler API Key
+        const key = '0sOZZ1SH9yKn4xcCMPkQ';
+
+        // Common options for MapTiler raster tiles
+        const maptilerOptions = {
+            tileSize: 512,
+            zoomOffset: -1,
+            minZoom: 1,
+            attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+            crossOrigin: true
+        };
+
+        // Basemaps from MapTiler (all labels in English)
+        var streets = L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions }).addTo(map); // Default
+
+        var satellite = L.tileLayer(`https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${key}`, { ...maptilerOptions });
+
+        var bright = L.tileLayer(`https://api.maptiler.com/maps/bright-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var outdoor = L.tileLayer(`https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var topo = L.tileLayer(`https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var winter = L.tileLayer(`https://api.maptiler.com/maps/winter/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var openstreetmap = L.tileLayer(`https://api.maptiler.com/maps/osm/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var base = L.tileLayer(`https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var dataviz = L.tileLayer(`https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var landscape = L.tileLayer(`https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var baseLayers = {
+            "Streets": streets,
+            "Satellite (Hybrid)": satellite,
+            "Bright": bright,
+            "Outdoor": outdoor,
+            "Topo": topo,
+            "Winter": winter,
+            "OpenStreetMap": openstreetmap,
+            "Base (Basic)": base,
+            "Dataviz": dataviz,
+            "Landscape": landscape
+
+        };
+
+
+
+        // Correct plugin initializations (only working ones)
+        L.control.polylineMeasure(options = {position: 'bottomleft'}).addTo(map);
+        map.addControl(new L.Control.FullScreen());
+        L.control.scalefactor().addTo(map);
+        L.control.BigImage({
+        position: 'topright', // Position of the button
+        title: 'Download Map', // Text on hover
+        printSprite: true      // Show a printer icon
+        }).addTo(map);
+
+		
+        var measureControl = new L.Control.Measure({
+    position: 'topleft',                  // Control position on map
+    primaryLengthUnit: 'meters',            // Default: feet (options: 'feet', 'meters', 'miles', 'kilometers')
+    secondaryLengthUnit: 'kilometers',         // Optional secondary unit
+    primaryAreaUnit: 'acres',             // Default: sqmeters (options: 'acres', 'sqfeet', 'sqmeters', 'hectares')
+    secondaryAreaUnit: undefined,         // Optional
+    activeColor: '#db4a29',               // Color while measuring
+    completedColor: '#9b2d14'             // Color when finished
+        });
+        measureControl.addTo(map);
+
+       // Feature group for drawn items
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        // Add draw control
+        const drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            },
+            draw: {
+                polyline: true,
+                polygon: {
+                    showArea: true
+                },
+                circle: true,
+                rectangle: true,
+                marker: true
+            }
+        });
+        map.addControl(drawControl);
+        
+        // Event: When shape is created
+        map.on(L.Draw.Event.CREATED, function (e) {
+            const layer = e.layer;
+            drawnItems.addLayer(layer);
+            
+           
+            // Get coordinates
+            if (e.layerType === 'marker') {
+                console.log('Marker:', layer.getLatLng());
+            } else if (e.layerType === 'polyline') {
+                console.log('Polyline:', layer.getLatLngs());
+            } else if (e.layerType === 'polygon') {
+                console.log('Polygon:', layer.getLatLngs());
+            }
+        });
+        
+        // Event: When shape is edited
+        map.on(L.Draw.Event.EDITED, function (e) {
+            const layers = e.layers;
+            layers.eachLayer(function(layer) {
+                console.log('Edited:', layer);
+            });
+        });
+        
+        // Event: When shape is deleted
+        map.on(L.Draw.Event.DELETED, function (e) {
+            const layers = e.layers;
+            console.log('Deleted layers:', layers);
+        });
+
+        // Province-only categorization with dropdown (FIXED: Use groups only, no direct marker adds)
+var provinceGroups = {};
+
+// Custom Province Dropdown Control (position handled by Leaflet)
+var ProvinceControl = L.Control.extend({
+    onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'province-control leaflet-bar');
+        container.innerHTML = `
+            <label for="province-select">Province:</label>
+            <select id="province-select">
+                <option value="all">All Provinces</option>
+            </select>
+        `;
+        
+        var select = container.querySelector('#province-select');
+        
+        // Update dropdown options when data loads
+        window.updateProvinceDropdown = function(provinces) {
+            select.innerHTML = '<option value="all">All Provinces</option>';
+            provinces.forEach(function(prov) {
+                var option = document.createElement('option');
+                option.value = prov;
+                option.textContent = prov;
+                select.appendChild(option);
+            });
+        };
+        
+        // Dropdown change handler (FIXED: Remove/add groups properly)
+        select.addEventListener('change', function() {
+            var selected = this.value;
+            // Remove all groups first
+            Object.values(provinceGroups).forEach(function(group) {
+                map.removeLayer(group);
+            });
+            
+            if (selected === 'all') {
+                // Show all groups
+                Object.values(provinceGroups).forEach(function(group) {
+                    map.addLayer(group);
+                });
+            } else {
+                // Show only selected group
+                if (provinceGroups[selected]) {
+                    map.addLayer(provinceGroups[selected]);
+                }
+            }
+        });
+        
+        return container;
+    }
+});
+
+// Add province control to map (topright by default)
+new ProvinceControl({ position: 'topright' }).addTo(map);
+
+        // Load Excel data (ONLY categorize by Province)
+        fetch('terrorist_attacks_pakistan.xlsx')
+            .then(response => response.arrayBuffer())
+            .then(data => {
+                var workbook = XLSX.read(data, { type: 'array' });
+                var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                var jsonData = XLSX.utils.sheet_to_json(sheet);
+                
+        console.log('Loaded Excel rows:', jsonData.length); // DEBUG: Check in browser console
+        var provinces = new Set(); // Unique provinces (use Set to avoid duplicates)
+        var filteredCount = 0; // DEBUG: Count valid markers
+            
+        jsonData.forEach(row => {
+        if (row.Latitude && row.Longitude && row.Date) {
+        var serial = row.Date;
+        var attackDate = new Date(row.Date);
+        if (isNaN(attackDate.getTime())) {
+        console.warn('Invalid date format:', row.Date); // DEBUG: Log bad dates
+        return; // Skip invalid dates
+        }
+         {
+        var popupContent = `
+        <b>Date:</b> ${row.Date || 'N/A'}<br>
+        <b>Deaths (Gov):</b> ${row.Deaths_Gov || 'N/A'}<br>
+        <b>Deaths (Terrorist):</b> ${row.Deaths_Terrorist || 'N/A'}<br>
+        <b>City:</b> ${row.City || 'N/A'}<br>
+        <b>Description:</b> ${row.Description || 'N/A'}<br>
+        <b>Province:</b> ${row.Province || 'N/A'}<br>
+        <b>Injuries:</b> ${row.Injuries || 'N/A'}<br>
+        <b>Latitude:</b> ${row.Latitude}<br>
+        <b>Longitude:</b> ${row.Longitude}<br>
+        <b>Terrorist Group:</b> ${row.Terrorist_Group || 'N/A'}
+        `;
+
+        var marker = L.marker([row.Latitude, row.Longitude])
+        .bindPopup(popupContent);
+
+        marker.on('mouseover', e => e.target.openPopup());
+        marker.on('mouseout', e => e.target.closePopup());
+
+        // Group by Province ONLY
+        var prov = row.Province || 'Unknown';
+        if (!provinceGroups[prov]) {
+            provinceGroups[prov] = L.layerGroup();
+        }
+        provinceGroups[prov].addLayer(marker);
+        provinces.add(prov);
+        filteredCount++;
+            }
+        }
+        });
+
+        console.log('Filtered valid markers:', filteredCount); // DEBUG
+
+        // Update dropdown with provinces (sorted)
+        var provincesArray = Array.from(provinces).sort();
+        window.updateProvinceDropdown(provincesArray);
+
+        // Show ALL groups by default (FIX: No direct markers, only groups)
+        Object.values(provinceGroups).forEach(group => map.addLayer(group));
+    })
+        .catch(err => {
+    console.error('Data load error:', err);
+    // Fallback message
+    L.marker([30.3753, 69.3451]).addTo(map)
+    .bindPopup('Error loading terrorist_attacks_pakistan.xlsx. Please check file exists in root directory and has valid data.');
+    });
+
+// Basemap layer control (collapsible)
+L.control.layers(baseLayers, {}, { collapsed: true, position: 'topright' }).addTo(map);
+    </script>
+</body>
+</html>
