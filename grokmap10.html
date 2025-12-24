@@ -8,14 +8,17 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <!-- Plugin CSS (only for working plugins) -->
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" /> <!-- Not requested, but often used -->
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/brunob/leaflet.fullscreen/master/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
     <link rel="stylesheet" href="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/kartena/Leaflet.Pancontrol/master/src/Leaflet.Pancontrol.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/w8r/Leaflet.Bookmarks/master/dist/leaflet.bookmarks.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/ljagis/leaflet-measure/master/dist/leaflet-measure.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/gokertanrisever/leaflet-ruler/master/leaflet-ruler.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/ppete2/Leaflet.PolylineMeasure/master/Leaflet.PolylineMeasure.css" />
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/NLTGit/Leaflet.LinearMeasurement/master/dist/leaflet.linearmeasurement.css" />
+    <link rel="stylesheet" href="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@latest/dist/leaflet.draw.css" />
+    <link rel="stylesheet" type="text/css" href="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.css">
+    <link rel="stylesheet" href="https://ljagis.github.io/leaflet-measure/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.css" rel="stylesheet" />
     <style>
         #map { height: 800px; width: 100%; }
     </style>
@@ -26,45 +29,74 @@
     <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Working Plugins (verified with correct initialization) -->
-    <script src="https://raw.githubusercontent.com/slara/Leaflet.BorderPan/master/Leaflet.BorderPan.js"></script> <!-- Adds map.borderPan({}) -->
     <script src="https://raw.githubusercontent.com/SINTEF-9012/Leaflet.GameController/master/Leaflet.GameController.js"></script>
-    <script src="https://raw.githubusercontent.com/kartena/Leaflet.Pancontrol/master/src/Leaflet.Pancontrol.js"></script>
-    <script src="https://raw.githubusercontent.com/vogdb/Leaflet.ActiveLayers/master/dist/Leaflet.ActiveLayers.min.js"></script>
-    <script src="https://raw.githubusercontent.com/w8r/Leaflet.Bookmarks/master/dist/leaflet.bookmarks.min.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
     <script src="https://raw.githubusercontent.com/Norkart/Leaflet-MiniMap/master/dist/Control.MiniMap.min.js"></script>
-    <script src="https://raw.githubusercontent.com/NLTGit/Leaflet.LinearMeasurement/master/dist/leaflet.linearmeasurement.js"></script>
     <script src="https://raw.githubusercontent.com/wattnpapa/leaflet.nauticscale/master/dist/leaflet.nauticscale.js"></script>
-    <script src="https://raw.githubusercontent.com/MarcChasse/leaflet.ScaleFactor/master/dist/leaflet.scalefactor.js"></script>
-    <script src="https://raw.githubusercontent.com/ljagis/leaflet-measure/master/dist/leaflet-measure.min.js"></script>
-    <script src="https://raw.githubusercontent.com/gokertanrisever/leaflet-ruler/master/leaflet-ruler.js"></script>
-    <script src="https://raw.githubusercontent.com/ppete2/Leaflet.PolylineMeasure/master/Leaflet.PolylineMeasure.js"></script>
-    <script src="https://raw.githubusercontent.com/gabriel-russo/Leaflet.QgsMeasure/master/dist/leaflet.qgsmeasure.js"></script>
-    <script src="https://raw.githubusercontent.com/pasichnykvasyl/Leaflet.BigImage/master/dist/Leaflet.BigImage.min.js"></script>
+    <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
     <script src="https://raw.githubusercontent.com/Igor-Vladyka/leaflet.browser.print/master/dist/leaflet.browser.print.min.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@latest/dist/leaflet.draw.js"></script>
+    <script src="https://npmcdn.com/jquery@3.0.0/dist/jquery.min.js"></script>
+    <script src="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.js"></script>
+    <script src="https://ljagis.github.io/leaflet-measure/leaflet-measure.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.umd.min.js"></script>
+    <script src="https://cdn.maptiler.com/leaflet-maptilersdk/v4.1.0/leaflet-maptilersdk.umd.min.js"></script>
     <script>
-        // Map initialization
+
+            // Map initialization (must be after basemaps for default addTo)
         var map = L.map('map', { center: [30.3753, 69.3451], zoom: 5 });
 
+        // MapTiler API Key
+        const key = '0sOZZ1SH9yKn4xcCMPkQ';
 
-        // Basemaps (English labels)
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        // Common options for MapTiler raster tiles
+        const maptilerOptions = {
+            tileSize: 512,
+            zoomOffset: -1,
+            minZoom: 1,
+            attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+            crossOrigin: true
+        };
 
-        var esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        });
+        // Basemaps from MapTiler (all labels in English)
+        var streets = L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions }).addTo(map); // Default
 
-        var openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data: &copy; <a href="https://www.opentopomap.org">OpenTopoMap</a>'
-        });
+        var satellite = L.tileLayer(`https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${key}`, { ...maptilerOptions });
+
+        var bright = L.tileLayer(`https://api.maptiler.com/maps/bright-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var outdoor = L.tileLayer(`https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var topo = L.tileLayer(`https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var winter = L.tileLayer(`https://api.maptiler.com/maps/winter/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var openstreetmap = L.tileLayer(`https://api.maptiler.com/maps/osm/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var base = L.tileLayer(`https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var dataviz = L.tileLayer(`https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var landscape = L.tileLayer(`https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
 
         var baseLayers = {
-            "OpenStreetMap": osm,
-            "Esri Imagery": esriImagery,
-            "OpenTopoMap": openTopo
+            "Streets": streets,
+            "Satellite (Hybrid)": satellite,
+            "Bright": bright,
+            "Outdoor": outdoor,
+            "Topo": topo,
+            "Winter": winter,
+            "OpenStreetMap": openstreetmap,
+            "Base (Basic)": base,
+            "Dataviz": dataviz,
+            "Landscape": landscape
+
         };
+
+
 
         // Province and District borders
         fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/PAK/ADM1/geoBoundaries-PAK-ADM1_simplified.geojson')
@@ -76,19 +108,78 @@
             .then(data => L.geoJSON(data, { style: { color: '#0000ff', weight: 1, fillOpacity: 0 } }).addTo(map));
 
         // Correct plugin initializations (only working ones)
+        L.control.polylineMeasure(options = {position: 'bottomleft'}).addTo(map);
+        map.addControl(new L.Control.FullScreen());
+        L.control.scalefactor().addTo(map);
+        L.control.BigImage({
+        position: 'topright', // Position of the button
+        title: 'Download Map', // Text on hover
+        printSprite: true      // Show a printer icon
+        }).addTo(map);
 
-        L.control.fullscreen({ position: 'topleft',title: 'Full screen',
-            titleCancel: 'Exit full screen', forceSeparateButton: true}).addTo(map); // Fullscreen
-        new L.Control.MiniMap(L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'), { toggleDisplay: true }).addTo(map); // MiniMap
-        L.control.linearMeasurement({ position: 'topleft' }).addTo(map); // LinearMeasurement
-        L.control.nauticScale().addTo(map); // NauticScale
-        L.control.scaleFactor().addTo(map); // ScaleFactor
-        L.control.measure({ position: 'topleft' }).addTo(map); // leaflet-measure
-        L.control.ruler({ position: 'topleft' }).addTo(map); // Ruler
-        L.control.polylineMeasure({ position: 'topleft' }).addTo(map); // PolylineMeasure
-        L.control.qgsMeasure({ position: 'topleft' }).addTo(map); // QgsMeasure
-        map.addcontrol.bigImage({ position: 'topright' }).addTo(map); // BigImage (print large image)
-        L.control.browserPrint({ position: 'topleft' }).addTo(map); // BrowserPrint
+		
+        var measureControl = new L.Control.Measure({
+    position: 'topleft',                  // Control position on map
+    primaryLengthUnit: 'meters',            // Default: feet (options: 'feet', 'meters', 'miles', 'kilometers')
+    secondaryLengthUnit: 'kilometers',         // Optional secondary unit
+    primaryAreaUnit: 'acres',             // Default: sqmeters (options: 'acres', 'sqfeet', 'sqmeters', 'hectares')
+    secondaryAreaUnit: undefined,         // Optional
+    activeColor: '#db4a29',               // Color while measuring
+    completedColor: '#9b2d14'             // Color when finished
+        });
+        measureControl.addTo(map);
+
+       // Feature group for drawn items
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        // Add draw control
+        const drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems,
+                remove: true
+            },
+            draw: {
+                polyline: true,
+                polygon: {
+                    showArea: true
+                },
+                circle: true,
+                rectangle: true,
+                marker: true
+            }
+        });
+        map.addControl(drawControl);
+        
+        // Event: When shape is created
+        map.on(L.Draw.Event.CREATED, function (e) {
+            const layer = e.layer;
+            drawnItems.addLayer(layer);
+            
+           
+            // Get coordinates
+            if (e.layerType === 'marker') {
+                console.log('Marker:', layer.getLatLng());
+            } else if (e.layerType === 'polyline') {
+                console.log('Polyline:', layer.getLatLngs());
+            } else if (e.layerType === 'polygon') {
+                console.log('Polygon:', layer.getLatLngs());
+            }
+        });
+        
+        // Event: When shape is edited
+        map.on(L.Draw.Event.EDITED, function (e) {
+            const layers = e.layers;
+            layers.eachLayer(function(layer) {
+                console.log('Edited:', layer);
+            });
+        });
+        
+        // Event: When shape is deleted
+        map.on(L.Draw.Event.DELETED, function (e) {
+            const layers = e.layers;
+            console.log('Deleted layers:', layers);
+        });
 
         // Layer groups
         var provinceGroups = {};
@@ -141,7 +232,7 @@
                         terroristGroups[grp].addLayer(marker);
                     }
                 });
-
+                
                 // Show all by default
                 Object.values(provinceGroups).forEach(g => g.addTo(map));
                 Object.values(terroristGroups).forEach(g => g.addTo(map));
