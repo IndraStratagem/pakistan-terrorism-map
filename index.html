@@ -60,6 +60,17 @@
                 <option value="all">All Provinces</option>
             </select>
         </div>
+
+        <div class="control-group">
+            <label for="date-from">From Date:</label>
+            <input type="date" id="date-from">
+        </div>
+
+        <div class="control-group">
+            <label for="date-to">To Date:</label>
+            <input type="date" id="date-to">
+        </div>
+
         <div id="basemap-control">
             <label for="basemap-select">Basemap:</label>
             <select id="basemap-select"></select>
@@ -318,42 +329,55 @@
         });
 
         // Province groups
-        var provinceGroups = {};
-        var provinceSelect = document.getElementById('province-select');
+        let allMarkers = []; // All markers (for filtering)
+        const provinceGroups = {};
         
+        //controls
+        const provinceSelect = document.getElementById('province-select');
+        const dateFromInput = document.getElementById('date-from');
+        const dateToInput = document.getElementById('date-to');
+
        // Update dropdown options when data loads
         window.updateProvinceDropdown = function(provinces) {
             provinceSelect.innerHTML = '<option value="all">All Provinces</option><option value="clear">Clear Markers</option>';
             provinces.forEach(function(prov) {
-                var option = document.createElement('option');
-                option.value = prov;
-                option.textContent = prov;
-                provinceSelect.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = prov;
+                opt.textContent = prov;
+                provinceSelect.appendChild(opt);
             });
         };
         
-        // Dropdown change handler (FIXED: Remove/add groups properly, with clear option)
-        provinceSelect.addEventListener('change', function() {
-            var selected = this.value;
-            // Remove all groups first
-            Object.values(provinceGroups).forEach(function(group) {
-                map.removeLayer(group);
-            });
-            
-            if (selected === 'clear') {
-                // Do nothing - markers are already removed
-            } else if (selected === 'all') {
-                // Show all groups
-                Object.values(provinceGroups).forEach(function(group) {
-                    map.addLayer(group);
-                });
-            } else {
-                // Show only selected group
-                if (provinceGroups[selected]) {
-                    map.addLayer(provinceGroups[selected]);
-                }
+        // Filter and display markers
+        function applyFilters() {
+        // Clear current layers
+        allMarkers.forEach(m => map.removeLayer(m));
+        
+        const selectedProvince = provinceSelect.value;
+        const fromDate = dateFromInput.value ? new Date(dateFromInput.value) : null;
+        const toDate = dateToInput.value ? new Date(dateToInput.value) : null;
+        
+        if (selectedProvince === 'clear') return;
+        allMarkers.forEach(marker => {
+            const row = marker.options.rowData;
+            const attackDate = new Date(row["Date of Attack"]);
+
+            // Province filter
+            const provinceMatch = selectedProvince === 'all' || row.Province === selectedProvince;
+            // Date filter
+            const dateMatch = (!fromDate || attackDate >= fromDate) && (!toDate || attackDate <= toDate);
+
+            if (provinceMatch && dateMatch) {
+                marker.addTo(map);
             }
         });
+    }
+
+
+    // Event listeners for filters
+    provinceSelect.addEventListener('change', applyFilters); 
+    dateFromInput.addEventListener('change', applyFilters);
+    dateToInput.addEventListener('change', applyFilters);
         
         // === SUPABASE CONFIGURATION ===
         const supabaseUrl = 'https://erfkjeuqevvcbzhllfyt.supabase.co';  // REPLACE WITH YOUR PROJECT URL
@@ -363,25 +387,44 @@
         
         // Load data from Supabase (replace 'attacks' with your actual table name)
         async function loadData() {
+            try {
             const { data: jsonData, error } = await supabaseClient
                 .from('pakistan terrorism database')  // Your table name
                 .select('*');
                 
-            if (error) {
-                console.error('Supabase error:', error);
-                L.marker([30.3753, 69.3451]).addTo(map)
-                    .bindPopup('Error loading data from Supabase.');
+           if (error) {
+            console.error('Supabase query error:', error);
+            alert('Error loading data: ' + error.message);
+            return;
+        }
+
+        if (!jsonData || jsonData.length === 0) {
+            console.warn('No data returned from Supabase');
+            alert('No data found in the table.');
+            return;
+        }
+
+        console.log('Total rows loaded:', jsonData.length);
+
+        allMarkers = [];
+        const provinces = new Set();
+
+        let validMarkerCount = 0;
+
+            jsonData.forEach((row, index) => {
+                // Log first few rows for debugging
+            if (index < 5) console.log('Sample row:', row);
+
+            const lat = parseFloat(row.Latitude);
+            const lng = parseFloat(row.Longitude);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                console.warn(`Invalid coordinates at row ${index}:`, row.Latitude, row.Longitude);
                 return;
             }
 
-            console.log('Loaded Supabase rows:', jsonData.length); // DEBUG
-
-            var provinces = new Set(); // Unique provinces
-            var filteredCount = 0; // DEBUG: Count valid markers
-
-            jsonData.forEach(row => {
-                if (row.Latitude && row.Longitude) {
-                    var popupContent = `
+            const province = row.Province?.trim() || 'Unknown';
+                    const popupContent = `
                         <b>Incident ID:</b> ${row["Incident id"] || 'N/A'}<br>
                         <b>Created At:</b> ${row.created_at || 'N/A'}<br>
                         <b>Date of Attack:</b> ${row["Date of Attack"] || 'N/A'}<br>
@@ -401,32 +444,41 @@
                         <b>Longitude:</b> ${row.Longitude}
                     `;
 
-                    var marker = L.marker([row.Latitude, row.Longitude])
-                        .bindPopup(popupContent);
+        const marker = L.marker([lat, lng])
+                .bindPopup(popupContent);
 
-                    marker.on('mouseover', e => e.target.openPopup());
-                    marker.on('mouseout', e => e.target.closePopup());
+        marker.on('mouseover', e => marker.openPopup());
+        marker.on('mouseout', e => marker.closePopup());
 
-                    // Group by Province ONLY
-                    var prov = row.Province || 'Unknown';
-                    if (!provinceGroups[prov]) {
-                        provinceGroups[prov] = L.layerGroup();
-                    }
-                    provinceGroups[prov].addLayer(marker);
-                    provinces.add(prov);
-                    filteredCount++;
-                }
-            });
+        // Store row data for filtering
+        marker.options.rowData = row;
+        allMarkers.push(marker);
 
-            console.log('Filtered valid markers:', filteredCount); // DEBUG
+       provinces.add(province);
+            validMarkerCount++;
+        });
 
-            // Update dropdown with provinces (sorted)
-            var provincesArray = Array.from(provinces).sort();
-            window.updateProvinceDropdown(provincesArray);
 
-            // Show ALL groups by default
-            Object.values(provinceGroups).forEach(group => map.addLayer(group));
+            console.log('Valid markers created:', validMarkerCount);
+        console.log('Unique provinces found:', Array.from(provinces));
+
+        if (provinces.size === 0) {
+            alert('No valid provinces found in data. Check "Province" column.');
+            return;
         }
+
+        // Sort and update dropdown
+        const sortedProvinces = Array.from(provinces).sort();
+        window.updateProvinceDropdown(sortedProvinces);
+
+        // Show all markers initially
+        applyFilters();
+
+    } catch (err) {
+        console.error('Unexpected error in loadData:', err);
+        alert('Failed to load data: ' + err.message);
+        }
+    }
 
         // Call to load data
         loadData();
