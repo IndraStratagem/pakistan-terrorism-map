@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map of Terrorist Attacks in Pakistan (Post-2021)</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Plugin CSS (cleaned up, removed duplicates) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <link rel="stylesheet" type="text/css" href="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://prominentedge.com/leaflet-measure-path/leaflet-measure-path.css" />
+    <link rel="stylesheet" href="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.css" />
+    
+    <style>
+        #map { height: 800px; width: 100%; }
+        /* Controls below map */
+        #controls-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            padding: 10px;
+            background: #f0f0f0;
+            border: 1px solid #cccccc;
+        }
+        #controls-container select {
+            width: 200px;
+            padding: 5px;
+            font-size: 14px;
+        }
+        #controls-container label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        #geojson-export {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #geojson-export:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <!-- Controls outside the map -->
+    <div id="controls-container">
+        <div id="province-control">
+            <label for="province-select">Province:</label>
+            <select id="province-select">
+                <option value="all">All Provinces</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="date-from">From Date:</label>
+            <input type="date" id="date-from">
+        </div>
+
+        <div class="control-group">
+            <label for="date-to">To Date:</label>
+            <input type="date" id="date-to">
+        </div>
+
+        <div id="basemap-control">
+            <label for="basemap-select">Basemap:</label>
+            <select id="basemap-select"></select>
+        </div>
+        <button id="geojson-export">GeoJSON</button>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Working Plugins (verified with correct initialization) -->
+    <script src="https://unpkg.com/leaflet.fullscreen/dist/Control.FullScreen.umd.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://npmcdn.com/jquery@3.0.0/dist/jquery.min.js"></script>
+    <script src="https://rawgit.com/MarcChasse/leaflet.ScaleFactor/master/leaflet.scalefactor.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.bigimage@1.0.1/dist/Leaflet.BigImage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v3.9.0/maptiler-sdk.umd.min.js"></script>
+    <script src="https://cdn.maptiler.com/leaflet-maptilersdk/v4.1.0/leaflet-maptilersdk.umd.min.js"></script>
+    <script src="https://prominentedge.com/leaflet-measure-path/leaflet-measure-path.js"></script>
+    <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
+    <script>
+
+        // Map initialization (must be after basemaps for default addTo)
+        var map = L.map('map', { center: [30.3753, 69.3451], zoom: 5, editable: true });
+
+        // MapTiler API Key
+        const key = '0sOZZ1SH9yKn4xcCMPkQ';
+
+        // Common options for MapTiler raster tiles
+        const maptilerOptions = {
+            tileSize: 512,
+            zoomOffset: -1,
+            minZoom: 1,
+            attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
+            crossOrigin: true
+        };
+
+        // Basemaps from MapTiler (all labels in English)
+        var streets = L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions }).addTo(map); // Default
+        var satellite = L.tileLayer(`https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${key}`, { ...maptilerOptions });
+        var bright = L.tileLayer(`https://api.maptiler.com/maps/bright-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var outdoor = L.tileLayer(`https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var topo = L.tileLayer(`https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var winter = L.tileLayer(`https://api.maptiler.com/maps/winter/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var openstreetmap = L.tileLayer(`https://api.maptiler.com/maps/osm/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var base = L.tileLayer(`https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var dataviz = L.tileLayer(`https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+        var landscape = L.tileLayer(`https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=${key}`, { ...maptilerOptions });
+
+        var baseLayers = {
+            "Streets": streets,
+            "Satellite (Hybrid)": satellite,
+            "Bright": bright,
+            "Outdoor": outdoor,
+            "Topo": topo,
+            "Winter": winter,
+            "OpenStreetMap": openstreetmap,
+            "Base (Basic)": base,
+            "Dataviz": dataviz,
+            "Landscape": landscape
+        };
+
+        // Populate basemap select dropdown (outside map)
+        var basemapSelect = document.getElementById('basemap-select');
+        Object.keys(baseLayers).forEach(function(key) {
+            var option = document.createElement('option');
+            option.value = key;
+            option.textContent = key;
+            basemapSelect.appendChild(option);
+        });
+        basemapSelect.value = 'Streets'; // Default
+        // Change basemap on select
+        basemapSelect.addEventListener('change', function() {
+            var selected = this.value;
+            Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+            baseLayers[selected].addTo(map);
+        });
+
+        // Correct plugin initializations (only working ones)
+        map.addControl(new L.Control.FullScreen());
+        L.control.scalefactor().addTo(map);
+        L.control.BigImage({
+            position: 'topright',
+            title: 'Download Map',
+            printSprite: true
+        }).addTo(map);
+
+        L.control.polylineMeasure({
+            position: 'topleft',
+            unit: 'kilometres',
+            useSubunits: true,
+            clearMeasurementsOnStop: true,
+            showBearings: false,
+            bearingTextIn: 'In',
+            bearingTextOut: 'Out',
+            tooltipTextFinish: 'Click to <b>finish line</b><br>',
+            tooltipTextDelete: 'Press SHIFT-key and click to <b>delete point</b>',
+            tooltipTextMove: 'Click and drag to <b>move point</b><br>',
+            tooltipTextResume: '<br>Press CTRL-key and click to <b>resume line</b>',
+            tooltipTextAdd: 'Press CTRL-key and click to <b>add point</b>',
+            measureControlTitleOn: 'Turn on PolylineMeasure',
+            measureControlTitleOff: 'Turn off PolylineMeasure',
+            measureControlLabel: '&#8614;',
+            measureControlClasses: [],
+            showClearControl: true,
+            clearControlTitle: 'Clear Measurements',
+            clearControlLabel: '&times',
+            clearControlClasses: [],
+            showUnitControl: true,
+            unitControlUnits: ["kilometres", "landmiles", "nauticalmiles"],
+            unitControlTitle: {
+                text: 'Change Units',
+                kilometres: 'kilometres',
+                landmiles: 'land miles',
+                nauticalmiles: 'nautical miles'
+            },
+            unitControlLabel: {
+                metres: 'm',
+                kilometres: 'km',
+                feet: 'ft',
+                landmiles: 'mi',
+                nauticalmiles: 'nm'
+            },
+            unitControlClasses: [],
+            tempLine: {
+                color: '#00f',
+                weight: 2
+            },
+            fixedLine: {
+                color: '#006',
+                weight: 2
+            },
+            arrow: {
+                color: '#000'
+            },
+            startCircle: {
+                color: '#000',
+                weight: 1,
+                fillColor: '#0f0',
+                fillOpacity: 1,
+                radius: 3
+            },
+            intermedCircle: {
+                color: '#000',
+                weight: 1,
+                fillColor: '#ff0',
+                fillOpacity: 1,
+                radius: 3
+            },
+            currentCircle: {
+                color: '#000',
+                weight: 1,
+                fillColor: '#f0f',
+                fillOpacity: 1,
+                radius: 6
+            },
+            endCircle: {
+                color: '#000',
+                weight: 1,
+                fillColor: '#f00',
+                fillOpacity: 1,
+                radius: 3
+            }
+        }).addTo(map);
+
+        // Feature group for drawn items
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        // Add draw control (enable delete/remove)
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems,
+                remove: true  // Enable delete functionality
+            },
+            draw: {
+                polyline: {
+                    shapeOptions: {
+                        color: "red"
+                    },
+                    showLength: true
+                },
+                polygon: {
+                    shapeOptions: {
+                        color: "purple"
+                    },
+                    showArea: true,
+                    allowIntersection: false,
+                    drawError: {
+                        color: 'Orange',
+                        timeout: 1000
+                    }
+                },
+                circle: {
+                    shapeOptions: {
+                        color: "steelblue"
+                    }
+                },
+                rectangle: {
+                    shapeOptions: {
+                        color: "green"
+                    }
+                },
+                marker: true
+            }
+        });
+        map.addControl(drawControl);
+
+        // Event: When shape is created
+        map.on(L.Draw.Event.CREATED, function (e) {
+            const layer = e.layer;
+            console.log(layer.toGeoJSON());
+            drawnItems.addLayer(layer);
+            
+            // Get coordinates
+            if (e.layerType === 'marker') {
+                console.log('Marker:', layer.getLatLng());
+            } else if (e.layerType === 'polyline') {
+                var coords = layer.getLatLngs();
+                var length = 0;
+                for (var i = 0; i < coords.length - 1; i++) {
+                    length += coords[i].distanceTo(coords[i + 1]);
+                }
+                var lengthInKm = (length / 1000).toFixed(2);
+                var content = "Measure Distance: " + lengthInKm + " km";
+                layer.bindPopup(content).openPopup();
+                console.log('Polyline:', layer.getLatLngs());
+            } else if (e.layerType === 'polygon') {
+                var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                var areaInKm = (area / 1000000).toFixed(2); 
+                var popupContent = "Area: " + areaInKm + " km²";
+                layer.bindPopup(popupContent).openPopup();
+                console.log('Polygon:', layer.getLatLngs());
+            } else if (e.layerType === 'rectangle') {
+                var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                var areaInKm = (area / 1000000).toFixed(2); 
+                var popupContent = "Area: " + areaInKm + " km²";
+                layer.bindPopup(popupContent).openPopup();
+                console.log('rectangle:', layer.getLatLngs());
+            }
+        });
+        
+        // Event: When shape is edited
+        map.on(L.Draw.Event.EDITED, function (e) {
+            const layers = e.layers;
+            layers.eachLayer(function(layer) {
+                console.log('Edited:', layer);
+            });
+        });
+        
+        // Event: When shape is deleted
+        map.on(L.Draw.Event.DELETED, function (e) {
+            const layers = e.layers;
+            console.log('Deleted layers:', layers);
+        });
+
+        // Province groups
+        let allMarkers = []; // All markers (for filtering)
+        const provinceGroups = {};
+        
+        //controls
+        const provinceSelect = document.getElementById('province-select');
+        const dateFromInput = document.getElementById('date-from');
+        const dateToInput = document.getElementById('date-to');
+
+       // Update dropdown options when data loads
+        window.updateProvinceDropdown = function(provinces) {
+            provinceSelect.innerHTML = '<option value="all">All Provinces</option><option value="clear">Clear Markers</option>';
+            provinces.forEach(function(prov) {
+                const opt = document.createElement('option');
+                opt.value = prov;
+                opt.textContent = prov;
+                provinceSelect.appendChild(opt);
+            });
+        };
+        
+        // Filter and display markers
+        function applyFilters() {
+        // Clear current layers
+        allMarkers.forEach(m => map.removeLayer(m));
+        
+        const selectedProvince = provinceSelect.value;
+        const fromDate = dateFromInput.value ? new Date(dateFromInput.value) : null;
+        const toDate = dateToInput.value ? new Date(dateToInput.value) : null;
+        
+        if (selectedProvince === 'clear') return;
+        allMarkers.forEach(marker => {
+            const row = marker.options.rowData;
+            const attackDate = new Date(row["Date of Attack"]);
+
+            // Province filter
+            const provinceMatch = selectedProvince === 'all' || row.Province === selectedProvince;
+            // Date filter
+            const dateMatch = (!fromDate || attackDate >= fromDate) && (!toDate || attackDate <= toDate);
+
+            if (provinceMatch && dateMatch) {
+                marker.addTo(map);
+            }
+        });
+    }
+
+
+    // Event listeners for filters
+    provinceSelect.addEventListener('change', applyFilters); 
+    dateFromInput.addEventListener('change', applyFilters);
+    dateToInput.addEventListener('change', applyFilters);
+        
+        // === SUPABASE CONFIGURATION ===
+        const supabaseUrl = 'https://erfkjeuqevvcbzhllfyt.supabase.co';  // REPLACE WITH YOUR PROJECT URL
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyZmtqZXVxZXZ2Y2J6aGxsZnl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NjY0MTQsImV4cCI6MjA4MjE0MjQxNH0.B9o01-HbCagAjvp49g5Wuc3BeEOpUKqiZBej_Zfinf0';         // REPLACE WITH YOUR ANON KEY (from Settings > API)
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+        
+        // Load data from Supabase (replace 'attacks' with your actual table name)
+        async function loadData() {
+            try {
+            const { data: jsonData, error } = await supabaseClient
+                .from('pakistan terrorism database')  // Your table name
+                .select('*');
+                
+           if (error) {
+            console.error('Supabase query error:', error);
+            alert('Error loading data: ' + error.message);
+            return;
+        }
+
+        if (!jsonData || jsonData.length === 0) {
+            console.warn('No data returned from Supabase');
+            alert('No data found in the table.');
+            return;
+        }
+
+        console.log('Total rows loaded:', jsonData.length);
+
+        allMarkers = [];
+        const provinces = new Set();
+
+        let validMarkerCount = 0;
+
+            jsonData.forEach((row, index) => {
+                // Log first few rows for debugging
+            if (index < 5) console.log('Sample row:', row);
+
+            const lat = parseFloat(row.Latitude);
+            const lng = parseFloat(row.Longitude);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                console.warn(`Invalid coordinates at row ${index}:`, row.Latitude, row.Longitude);
+                return;
+            }
+
+            const province = row.Province?.trim() || 'Unknown';
+                    const popupContent = `
+                        <b>Incident ID:</b> ${row["Incident id"] || 'N/A'}<br>
+                        <b>Created At:</b> ${row.created_at || 'N/A'}<br>
+                        <b>Date of Attack:</b> ${row["Date of Attack"] || 'N/A'}<br>
+                        <b>Location:</b> ${row.Location || 'N/A'}<br>
+                        <b>City:</b> ${row.City || 'N/A'}<br>
+                        <b>Province:</b> ${row.Province || 'N/A'}<br>
+                        <b>Attack Type:</b> ${row["Attack Type"] || 'N/A'}<br>
+                        <b>Description:</b> ${row.Description || 'N/A'}<br>
+                        <b>Deaths (Total):</b> ${row["Deaths (Total)"] || 'N/A'}<br>
+                        <b>Injuries:</b> ${row.Injuries || 'N/A'}<br>
+                        <b>Property Damage:</b> ${row["Property damage"] || 'N/A'}<br>
+                        <b>Targets:</b> ${row.Targets || 'N/A'}<br>
+                        <b>Terrorist Group:</b> ${row["Terrorist group"] || 'N/A'}<br>
+                        <b>Motivation Ideology:</b> ${row["Motivation Ideology"] || 'N/A'}<br>
+                        <b>Weapon Type:</b> ${row["Weapon Type"] || 'N/A'}<br>
+                        <b>Latitude:</b> ${row.Latitude}<br>
+                        <b>Longitude:</b> ${row.Longitude}
+                    `;
+
+        const marker = L.marker([lat, lng])
+                .bindPopup(popupContent);
+
+        marker.on('mouseover', e => marker.openPopup());
+        marker.on('mouseout', e => marker.closePopup());
+
+        // Store row data for filtering
+        marker.options.rowData = row;
+        allMarkers.push(marker);
+
+       provinces.add(province);
+            validMarkerCount++;
+        });
+
+
+            console.log('Valid markers created:', validMarkerCount);
+        console.log('Unique provinces found:', Array.from(provinces));
+
+        if (provinces.size === 0) {
+            alert('No valid provinces found in data. Check "Province" column.');
+            return;
+        }
+
+        // Sort and update dropdown
+        const sortedProvinces = Array.from(provinces).sort();
+        window.updateProvinceDropdown(sortedProvinces);
+
+        // Show all markers initially
+        applyFilters();
+
+    } catch (err) {
+        console.error('Unexpected error in loadData:', err);
+        alert('Failed to load data: ' + err.message);
+        }
+    }
+
+        // Call to load data
+        loadData();
+
+        // GeoJSON export button (outside map)
+        document.getElementById('geojson-export').addEventListener('click', function() {
+            var geojson = drawnItems.toGeoJSON();
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojson));
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "drawn_shapes.geojson");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        });
+    </script>
+</body>
+</html>
